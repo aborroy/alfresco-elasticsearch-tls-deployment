@@ -46,7 +46,7 @@ services:
         -Dcsrf.filter.enabled=false
         -Dalfresco.restApi.basicAuthScheme=true
         -Dencryption.ssl.truststore.location=/usr/local/tomcat/alf_data/keystore/elasticsearch-truststore.jceks
-        -Dencryption.ssl.truststore.passwordFileLocation=
+        -Dssl-truststore.password=password
         -Dencryption.ssl.truststore.type=JCEKS
         -Xms3600m -Xmx3600m
         '
@@ -193,7 +193,7 @@ services:
       JAVA_OPTS: '
           -Djavax.net.ssl.trustStore=/tmp/elasticsearch-truststore.jceks
           -Djavax.net.ssl.trustStoreType=JCEKS
-          -Djavax.net.ssl.trustStorePassword=
+          -Djavax.net.ssl.trustStorePassword=password
       '
     volumes:
       - ./keystores/truststore/elasticsearch-truststore.jceks:/tmp/elasticsearch-truststore.jceks
