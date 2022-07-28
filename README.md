@@ -9,41 +9,14 @@ This project provides a *sample* Docker Compose template for ACS 7.2 with Alfres
 
 Docker Images from [quay.io](https://quay.io/organization/alfresco) are used, since this product is only available for Alfresco Enterprise customers. If you are Enterprise Customer or Partner but you are still experimenting problems to download Docker Images, contact [Alfresco Hyland Support](https://community.hyland.com) in order to get required credentials and permissions.
 
-## Docker Compose
+This project provides different sample projects to support this configuration:
 
-Docker Compose template includes following files:
-
-```
-.
-├── .env
-├── docker-compose.yml
-├── helper
-│   ├── create-certs.yml
-│   └── instances.yml
-└── keystores
-    ├── elasticsearch
-    │   ├── ca
-    │   │   └── ca.crt
-    │   └── elasticsearch
-    │       ├── elasticsearch.crt
-    │       └── elasticsearch.key
-    └── truststore
-        └── elasticsearch-truststore.jceks
-```
-
-* `.env` includes common values and service versions to be used by Docker Compose
-* `docker-compose.yml` is a regular ACS Docker Compose, including Elasticsearch Connector and Elasticsearch server with Kibana
-* `helper` folder includes a template to create Elasticsearch server certificates to configure the service with TLS (https), since it's not required to run this configuration
-* `keystores/elasticsearch` folder includes the certificates generated for Elasticsearch
-* `keystores/truststore` folder includes a truststore for clients communicating with Elasticsearch (Alfresco Repository and Elasticsearch Connector)
-
-## Using
-
-```
-$ docker-compose up --build --force-recreate
-```
+* [local-deployment](local-deployment) folder contains Docker Compose template to deploy every service locally
+* [aws-opensearch](aws-opensearch) folder contains Docker Compose template with ACS Services connecting to OpenSearch managed service deployed in AWS
 
 ## Service URLs
+
+For every project, you can access to ADW application and Repository UI once everything is up and ready.
 
 http://localhost:8080/workspace
 

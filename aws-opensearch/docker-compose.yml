@@ -1,0 +1,161 @@
+version: "2"
+
+services:
+  alfresco:
+    image: quay.io/alfresco/alfresco-content-repository:${ALFRESCO_TAG}
+    mem_limit: 4000m
+    environment:
+      JAVA_TOOL_OPTIONS: "
+        -Dencryption.keystore.type=JCEKS
+        -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+        -Dencryption.keyAlgorithm=DESede
+        -Dencryption.keystore.location=/usr/local/tomcat/shared/classes/alfresco/extension/keystore/keystore
+        -Dmetadata-keystore.password=mp6yc0UD9e
+        -Dmetadata-keystore.aliases=metadata
+        -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+        -Dmetadata-keystore.metadata.algorithm=DESede
+        "
+      JAVA_OPTS: '
+        -Delasticsearch.createIndexIfNotExists=true
+        -Ddb.driver=org.postgresql.Driver
+        -Ddb.username=alfresco
+        -Ddb.password=alfresco
+        -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+        -Dindex.subsystem.name=elasticsearch
+        -Delasticsearch.host=${ELASTICSEARCH_SERVER_NAME}
+        -Delasticsearch.port=443
+        -Delasticsearch.secureComms=https
+        -Delasticsearch.indexName=${ELASTICSEARCH_INDEX_NAME}
+        -Delasticsearch.user=${ELASTICSEARCH_USER}
+        -Delasticsearch.password=${ELASTICSEARCH_PASS}
+        -Dshare.host=127.0.0.1
+        -Dshare.port=8080
+        -Dalfresco.host=localhost
+        -Dalfresco.port=8080
+        -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+        -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
+        -Ddeployment.method=DOCKER_COMPOSE
+        -Dtransform.service.enabled=true
+        -Dtransform.service.url=http://transform-router:8095
+        -Dsfs.url=http://shared-file-store:8099/
+        -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+        -Dalfresco-pdf-renderer.url=http://transform-core-aio:8090/
+        -Djodconverter.url=http://transform-core-aio:8090/
+        -Dimg.url=http://transform-core-aio:8090/
+        -Dtika.url=http://transform-core-aio:8090/
+        -Dtransform.misc.url=http://transform-core-aio:8090/
+        -Dcsrf.filter.enabled=false
+        -Dalfresco.restApi.basicAuthScheme=true
+        -Dencryption.ssl.truststore.location=/usr/local/tomcat/alf_data/keystore/eu-west-1-truststore.jceks
+        -Dssl-truststore.password=password
+        -Dencryption.ssl.truststore.type=PKCS12
+        -Xms3600m -Xmx3600m
+        '
+    volumes:
+      - ./keystores:/usr/local/tomcat/alf_data/keystore
+
+  transform-router:
+    mem_limit: 512m
+    image: quay.io/alfresco/alfresco-transform-router:${TRANSFORM_ROUTER_TAG}
+    environment:
+      JAVA_OPTS: " -Xms256m -Xmx512m"
+      ACTIVEMQ_URL: "nio://activemq:61616"
+      CORE_AIO_URL: "http://transform-core-aio:8090"
+      FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
+    ports:
+      - 8095:8095
+    links:
+      - activemq
+
+  transform-core-aio:
+    image: quay.io/alfresco/alfresco-transform-core-aio:${TRANSFORM_CORE_AIO_TAG}
+    mem_limit: 2048m
+    environment:
+      JAVA_OPTS: " -Xms256m -Xmx2048m"
+      ACTIVEMQ_URL: "nio://activemq:61616"
+      FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
+    ports:
+      - 8090:8090
+    links:
+      - activemq
+
+  shared-file-store:
+    image: quay.io/alfresco/alfresco-shared-file-store:${SHARED_FILE_STORE_TAG}
+    mem_limit: 512m
+    environment:
+      JAVA_OPTS: " -Xms256m -Xmx512m"
+      scheduler.content.age.millis: 86400000
+      scheduler.cleanup.interval: 86400000
+    ports:
+      - 8099:8099
+    volumes:
+      - shared-file-store-volume:/tmp/Alfresco/sfs
+
+  postgres:
+    image: postgres:${POSTGRES_TAG}
+    mem_limit: 512m
+    environment:
+      - POSTGRES_PASSWORD=alfresco
+      - POSTGRES_USER=alfresco
+      - POSTGRES_DB=alfresco
+    command: postgres -c max_connections=300 -c log_min_messages=LOG
+    ports:
+      - 5432:5432
+
+  activemq:
+    image: quay.io/alfresco/alfresco-activemq:${ACTIVE_MQ_TAG}
+    mem_limit: 1g
+    ports:
+      - 8161:8161 # Web Console
+      - 5672:5672 # AMQP
+      - 61616:61616 # OpenWire
+      - 61613:61613 # STOMP
+
+  digital-workspace:
+    image: quay.io/alfresco/alfresco-digital-workspace:${DIGITAL_WORKSPACE_TAG}
+    mem_limit: 128m
+    environment:
+      BASEPATH: ./
+
+  proxy:
+    image: alfresco/alfresco-acs-nginx:${ACS_NGINX_TAG}
+    mem_limit: 128m
+    depends_on:
+      - alfresco
+    environment:
+        DISABLE_PROMETHEUS: "true"
+        DISABLE_SYNCSERVICE: "true"
+        DISABLE_SHARE: "true"
+        DISABLE_CONTROL_CENTER: "true"
+    ports:
+      - 8080:8080
+    links:
+      - digital-workspace
+      - alfresco
+
+  live-indexing:
+    image: quay.io/alfresco/alfresco-elasticsearch-live-indexing:${LIVE_INDEXING_TAG}
+    mem_limit: 512m
+    depends_on:
+      - alfresco
+    environment:
+      ELASTICSEARCH_INDEXNAME: alfresco
+      SPRING_ELASTICSEARCH_REST_URIS: https://${ELASTICSEARCH_SERVER_NAME}
+      SPRING_ELASTICSEARCH_REST_USERNAME: ${ELASTICSEARCH_USER}
+      SPRING_ELASTICSEARCH_REST_PASSWORD: ${ELASTICSEARCH_PASS}
+      SPRING_ACTIVEMQ_BROKERURL: nio://activemq:61616
+      ALFRESCO_SHAREDFILESTORE_BASEURL: http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file/
+      ALFRESCO_ACCEPTEDCONTENTMEDIATYPESCACHE_BASEURL: http://transform-core-aio:8090/transform/config
+      JAVA_OPTS: '
+          -Djavax.net.ssl.trustStore=/tmp/eu-west-1-truststore.jceks
+          -Djavax.net.ssl.trustStoreType=PKCS12
+          -Djavax.net.ssl.trustStorePassword=password
+      '
+    volumes:
+      - ./keystores/eu-west-1-truststore.jceks:/tmp/eu-west-1-truststore.jceks
+
+volumes:
+  shared-file-store-volume:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
