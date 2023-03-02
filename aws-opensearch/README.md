@@ -77,6 +77,11 @@ $ keytool -import -file \*.eu-west-1.es.amazonaws.com.cer -alias eu-west-1 -keys
 
 >> Note that default password `password` has been used for this sample
 
+Alternatively, to build a truststore file in PKCS12 format, following script can be used:
+
+https://github.com/AlfrescoLabs/alfresco-opensearch-aws/blob/main/scripts/5-build-truststore.sh
+
+
 ## Using
 
 ```
