@@ -48,7 +48,7 @@ services:
         -Dalfresco.restApi.basicAuthScheme=true
         -Dencryption.ssl.truststore.location=/usr/local/tomcat/alf_data/keystore/eu-west-1-truststore.jceks
         -Dssl-truststore.password=password
-        -Dencryption.ssl.truststore.type=PKCS12
+        -Dencryption.ssl.truststore.type=JCEKS
         -Xms3600m -Xmx3600m
         '
     volumes:
@@ -148,7 +148,7 @@ services:
       ALFRESCO_ACCEPTEDCONTENTMEDIATYPESCACHE_BASEURL: http://transform-core-aio:8090/transform/config
       JAVA_OPTS: '
           -Djavax.net.ssl.trustStore=/tmp/eu-west-1-truststore.jceks
-          -Djavax.net.ssl.trustStoreType=PKCS12
+          -Djavax.net.ssl.trustStoreType=JCEKS
           -Djavax.net.ssl.trustStorePassword=password
       '
     volumes:
